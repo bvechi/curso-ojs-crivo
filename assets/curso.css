@@ -458,3 +458,13 @@ a.botao-imprimir { display: inline-block; text-decoration: none; color: #fff; }
 main [role="note"] table th, main [role="note"] table td { text-align: left; padding: .4rem .55rem; border-bottom: 1px solid var(--borda); vertical-align: top; }
 main [role="note"] table thead th { border-bottom: 2px solid var(--azul); }
 main [role="note"] table th { overflow-wrap: normal; word-break: normal; hyphens: none; }
+
+/* Atalhos para o início do curso e da unidade, no fim de cada página. */
+.atalhos-inicio { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; margin-top: 1.25rem; }
+.atalho-inicio {
+  display: inline-block; padding: .5rem 1rem; border-radius: 999px; font-weight: 600; font-size: .9375rem;
+  color: var(--azul); background: var(--azul-claro); border: 1px solid #9db8d3; text-decoration: none;
+}
+.atalho-inicio:hover { background: var(--azul); color: #fff; }
+.migalhas [aria-current="page"] { font-weight: 600; }
+@media print { .atalhos-inicio { display: none !important; } }
