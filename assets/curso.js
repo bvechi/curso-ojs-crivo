@@ -163,6 +163,92 @@
     });
   }
 
+  // Gavetas: menu do curso (☰) e sumário lateral dos livros.
+  var fundo = null, gavetaAberta = null, gatilhoGaveta = null;
+  var largo = window.matchMedia("(min-width: 75rem)");
+  var CHAVE_LATERAL = "curso-ojs-crivo:sumario-lateral";
+  function abrirGaveta(el, botao, comFundo) {
+    el.hidden = false;
+    if (botao) botao.setAttribute("aria-expanded", "true");
+    if (comFundo) {
+      fundo = document.createElement("div");
+      fundo.className = "fundo-gaveta";
+      fundo.addEventListener("click", function () { fecharGaveta(el); });
+      document.body.appendChild(fundo);
+      gavetaAberta = el;
+      gatilhoGaveta = botao;
+      var primeiro = el.querySelector("[aria-current=page]") || el.querySelector("a, button");
+      if (primeiro) primeiro.focus();
+    }
+  }
+  function fecharGaveta(el) {
+    el.hidden = true;
+    document.querySelectorAll('[aria-controls="' + el.id + '"]').forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+    if (fundo) { fundo.remove(); fundo = null; }
+    if (el.id === "sumario-lateral") {
+      document.body.classList.remove("lateral-aberta");
+      if (largo.matches) { try { localStorage.setItem(CHAVE_LATERAL, "fechado"); } catch (e) { /* sem armazenamento */ } }
+    }
+    if (gavetaAberta === el && gatilhoGaveta) gatilhoGaveta.focus();
+    gavetaAberta = null;
+  }
+  var menu = document.getElementById("menu-curso");
+  var botaoMenu = document.querySelector(".botao-menu");
+  if (menu && botaoMenu) {
+    // Destaca a página atual no menu.
+    var aqui = location.href.split("#")[0];
+    var achou = false;
+    menu.querySelectorAll("a").forEach(function (a) {
+      if (a.href.split("#")[0] === aqui && !a.classList.contains("menu-secao")) { a.setAttribute("aria-current", "page"); achou = true; }
+    });
+    if (!achou) {
+      // Capítulo de livro: destaca o livro a que ele pertence.
+      var pasta = aqui.slice(0, aqui.lastIndexOf("/") + 1);
+      menu.querySelectorAll("a").forEach(function (a) {
+        if (a.href === pasta + "index.html") a.setAttribute("aria-current", "page");
+      });
+    }
+    botaoMenu.addEventListener("click", function () {
+      if (menu.hidden) abrirGaveta(menu, botaoMenu, true); else fecharGaveta(menu);
+    });
+  }
+  var lateral = document.getElementById("sumario-lateral");
+  var botaoSumario = document.querySelector(".botao-sumario");
+  if (lateral && botaoSumario) {
+    var ajustarLateral = function () {
+      var guardado = "";
+      try { guardado = localStorage.getItem(CHAVE_LATERAL) || ""; } catch (e) { guardado = ""; }
+      if (largo.matches && guardado !== "fechado") {
+        lateral.classList.add("fixo");
+        lateral.hidden = false;
+        document.body.classList.add("lateral-aberta");
+        botaoSumario.setAttribute("aria-expanded", "true");
+      } else {
+        lateral.classList.toggle("fixo", largo.matches);
+        lateral.hidden = true;
+        document.body.classList.remove("lateral-aberta");
+        botaoSumario.setAttribute("aria-expanded", "false");
+      }
+    };
+    ajustarLateral();
+    largo.addEventListener("change", ajustarLateral);
+    botaoSumario.addEventListener("click", function () {
+      if (!lateral.hidden) { fecharGaveta(lateral); return; }
+      if (largo.matches) {
+        try { localStorage.setItem(CHAVE_LATERAL, "aberto"); } catch (e) { /* sem armazenamento */ }
+        ajustarLateral();
+      } else {
+        abrirGaveta(lateral, botaoSumario, true);
+      }
+    });
+  }
+  document.querySelectorAll(".gaveta-fechar").forEach(function (b) {
+    b.addEventListener("click", function () { fecharGaveta(document.getElementById(b.dataset.fecha)); });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && gavetaAberta) fecharGaveta(gavetaAberta);
+  });
+
   // Voltar ao início: aparece depois que a pessoa rola mais de uma tela.
   var topo = document.createElement("button");
   topo.type = "button";
@@ -201,6 +287,200 @@
       aviso.textContent = q ? (n === 1 ? "1 resultado." : n + " resultados.") : "";
     });
   });
+
+  // Tabela de comparação: marcações guardadas no navegador e download em Word (.docx).
+  document.querySelectorAll(".comparacao").forEach(function (bloco) {
+    var chave = "curso-ojs-crivo:comparacao:" + bloco.dataset.comparacao;
+    var colunas = bloco.dataset.colunas.split("|");
+    var linhas = bloco.querySelectorAll("tr[data-linha]");
+    var aviso = bloco.querySelector(".aviso-comparacao");
+
+    function situacao(marcas) {
+      var real = marcas[0], treino = marcas[1];
+      if (real === undefined && treino === undefined) return "";
+      if (real && treino) return "Completo";
+      if (real && !treino) return "Falta no treinamento";
+      if (!real && treino) return "Só no treinamento";
+      return "Não encontrado";
+    }
+    function estado() {
+      var d = {};
+      linhas.forEach(function (tr) {
+        var caixas = tr.querySelectorAll("input[type=checkbox]");
+        d[tr.dataset.linha] = {
+          m: Array.prototype.map.call(caixas, function (c) { return c.checked; }),
+          t: tr.dataset.tocada === "1",
+          o: tr.querySelector(".obs").value
+        };
+      });
+      return d;
+    }
+    function mostrar(tr) {
+      var caixas = tr.querySelectorAll("input[type=checkbox]");
+      var marcas = tr.dataset.tocada === "1" ? Array.prototype.map.call(caixas, function (c) { return c.checked; }) : [];
+      var s = situacao(marcas);
+      var cel = tr.querySelector(".situacao");
+      cel.textContent = s;
+      cel.className = "situacao" + (s === "Falta no treinamento" ? " falta" : s === "Completo" ? " ok" : "");
+    }
+    function salvar() {
+      try { localStorage.setItem(chave, JSON.stringify(estado())); } catch (e) { /* sem armazenamento */ }
+    }
+    var salvo = {};
+    try { salvo = JSON.parse(localStorage.getItem(chave)) || {}; } catch (e) { salvo = {}; }
+    linhas.forEach(function (tr) {
+      var s = salvo[tr.dataset.linha];
+      var caixas = tr.querySelectorAll("input[type=checkbox]");
+      if (s) {
+        caixas.forEach(function (c, i) { c.checked = !!s.m[i]; });
+        tr.dataset.tocada = s.t ? "1" : "";
+        tr.querySelector(".obs").value = s.o || "";
+      }
+      mostrar(tr);
+      caixas.forEach(function (c) {
+        c.addEventListener("change", function () { tr.dataset.tocada = "1"; mostrar(tr); salvar(); });
+      });
+      tr.querySelector(".obs").addEventListener("input", salvar);
+    });
+
+    bloco.querySelector("[data-acao=respostas]").addEventListener("click", function () {
+      baixarDocx(bloco.dataset.titulo, colunas, linhas, true);
+      aviso.textContent = "Arquivo com as suas respostas baixado.";
+    });
+    bloco.querySelector("[data-acao=branco]").addEventListener("click", function () {
+      baixarDocx(bloco.dataset.titulo, colunas, linhas, false);
+      aviso.textContent = "Tabela em branco baixada.";
+    });
+    bloco.querySelector("[data-acao=limpar]").addEventListener("click", function () {
+      if (!window.confirm("Apagar todas as marcações e observações desta tabela?")) return;
+      linhas.forEach(function (tr) {
+        tr.querySelectorAll("input[type=checkbox]").forEach(function (c) { c.checked = false; });
+        tr.dataset.tocada = "";
+        tr.querySelector(".obs").value = "";
+        mostrar(tr);
+      });
+      try { localStorage.removeItem(chave); } catch (e) { /* sem armazenamento */ }
+      aviso.textContent = "Marcações apagadas.";
+    });
+  });
+
+  function baixarDocx(titulo, colunas, linhas, comRespostas) {
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function run(texto, negrito, simbolo) {
+      var rpr = (negrito ? "<w:b/>" : "") +
+        (simbolo ? '<w:rFonts w:ascii="Segoe UI Symbol" w:hAnsi="Segoe UI Symbol" w:cs="Segoe UI Symbol"/>' : "") +
+        '<w:sz w:val="20"/>';
+      return "<w:r><w:rPr>" + rpr + '</w:rPr><w:t xml:space="preserve">' + esc(texto) + "</w:t></w:r>";
+    }
+    function celula(texto, opcoes) {
+      opcoes = opcoes || {};
+      var tcpr = opcoes.mescla ? '<w:vMerge w:val="' + opcoes.mescla + '"/>' : (opcoes.continua ? "<w:vMerge/>" : "");
+      if (opcoes.fundo) tcpr += '<w:shd w:val="clear" w:color="auto" w:fill="' + opcoes.fundo + '"/>';
+      var jc = opcoes.centro ? '<w:jc w:val="center"/>' : "";
+      return "<w:tc><w:tcPr>" + tcpr + "</w:tcPr><w:p><w:pPr>" + jc + "</w:pPr>" +
+        (texto ? run(texto, opcoes.negrito, opcoes.simbolo) : "") + "</w:p></w:tc>";
+    }
+    var cab = ["Item", "Idioma"].concat(colunas, ["Situação", "Observações"]);
+    var linhasXml = '<w:tr><w:trPr><w:tblHeader/></w:trPr>' +
+      cab.map(function (c) { return celula(c, { negrito: true, fundo: "D9E2F3" }); }).join("") + "</w:tr>";
+    var anterior = null, grupoAnterior = null;
+    linhas.forEach(function (tr) {
+      var caixas = tr.querySelectorAll("input[type=checkbox]");
+      var item = tr.dataset.item;
+      var grupo = tr.dataset.grupo || "";
+      if (grupo && grupo !== grupoAnterior) {
+        linhasXml += '<w:tr><w:tc><w:tcPr><w:gridSpan w:val="' + cab.length + '"/>' +
+          '<w:shd w:val="clear" w:color="auto" w:fill="0B4F8A"/></w:tcPr><w:p>' +
+          '<w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">' +
+          esc(grupo) + "</w:t></w:r></w:p></w:tc></w:tr>";
+        anterior = null;
+      }
+      grupoAnterior = grupo;
+      var cels = celula(item, item === anterior ? { continua: true } : { mescla: "restart", negrito: true });
+      anterior = item;
+      cels += celula(tr.dataset.idioma);
+      caixas.forEach(function (c) {
+        var marcado = comRespostas && tr.dataset.tocada === "1" && c.checked;
+        cels += celula(marcado ? "☒" : "☐", { simbolo: true, centro: true });
+      });
+      cels += celula(comRespostas ? tr.querySelector(".situacao").textContent : "");
+      cels += celula(comRespostas ? tr.querySelector(".obs").value : "");
+      linhasXml += "<w:tr>" + cels + "</w:tr>";
+    });
+    var bordas = ["top", "left", "bottom", "right", "insideH", "insideV"].map(function (b) {
+      return "<w:" + b + ' w:val="single" w:sz="4" w:space="0" w:color="808080"/>';
+    }).join("");
+    var hoje = new Date().toLocaleDateString("pt-BR");
+    var corpo =
+      '<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t xml:space="preserve">' +
+      esc(titulo) + "</w:t></w:r></w:p>" +
+      '<w:p><w:pPr><w:spacing w:after="120"/></w:pPr>' +
+      run("Curso OJS 3.5 para a equipe da Revista Crivo · Unidade 2 · " + (comRespostas ? "Respostas baixadas em " + hoje : "Tabela em branco")) + "</w:p>" +
+      '<w:p><w:pPr><w:spacing w:after="200"/></w:pPr>' +
+      run("Marque o que existe em cada site. Situação: Completo, Falta no treinamento, Só no treinamento ou Não encontrado.") + "</w:p>" +
+      '<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>' + bordas + "</w:tblBorders>" +
+      '<w:tblLayout w:type="autofit"/></w:tblPr>' + linhasXml + "</w:tbl>" +
+      '<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>' +
+      '<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>';
+    var documento = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + corpo + "</w:body></w:document>";
+    var tipos = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+    var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+    var blob = zipar([["[Content_Types].xml", tipos], ["_rels/.rels", rels], ["word/document.xml", documento]]);
+    var nome = comRespostas ? "comparacao-crivo-minhas-respostas.docx" : "comparacao-crivo-em-branco.docx";
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  // ZIP sem compressão, suficiente para um .docx simples.
+  var tabelaCrc = null;
+  function crc32(bytes) {
+    if (!tabelaCrc) {
+      tabelaCrc = [];
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+        tabelaCrc[n] = c >>> 0;
+      }
+    }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) crc = tabelaCrc[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zipar(arquivos) {
+    var enc = new TextEncoder();
+    var partes = [], central = [], deslocamento = 0;
+    function u16(v) { return [v & 0xFF, (v >>> 8) & 0xFF]; }
+    function u32(v) { return [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF]; }
+    arquivos.forEach(function (arq) {
+      var nome = enc.encode(arq[0]), dados = enc.encode(arq[1]), crc = crc32(dados);
+      var local = [].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21),
+        u32(crc), u32(dados.length), u32(dados.length), u16(nome.length), u16(0));
+      partes.push(new Uint8Array(local), nome, dados);
+      central.push(new Uint8Array([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21),
+        u32(crc), u32(dados.length), u32(dados.length), u16(nome.length), u16(0), u16(0), u16(0), u16(0), u32(0),
+        u32(deslocamento))), nome);
+      deslocamento += local.length + nome.length + dados.length;
+    });
+    var tamCentral = central.reduce(function (s, p) { return s + p.length; }, 0);
+    var fim = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(arquivos.length), u16(arquivos.length),
+      u32(tamCentral), u32(deslocamento), u16(0)));
+    return new Blob(partes.concat(central, [fim]), {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+  }
 
   // Restrição branda da prática: lembra de passar pelo caso de abertura.
   var aviso = document.querySelector(".aviso-restricao");

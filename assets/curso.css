@@ -32,7 +32,7 @@ body {
   line-height: 1.6;
   color: var(--texto);
   background: #fff;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 a { color: var(--azul); }
@@ -68,13 +68,15 @@ h3 { color: var(--azul); line-height: 1.3; }
 .lead { font-size: 1.15rem; }
 
 .rodape {
-  border-top: 1px solid var(--borda);
-  color: var(--suave);
+  background: var(--azul);
+  color: #fff;
   font-size: .9375rem;
-  padding: 1rem clamp(1rem, 4vw, 2rem) 2rem;
-  max-width: 96ch;
-  margin: 0 auto;
+  padding: 1.25rem clamp(1rem, 4vw, 2rem) 1.5rem;
+  margin-top: 2rem;
 }
+.rodape a { color: #fff; }
+.rodape p { margin: .35rem 0; }
+.rodape-conteudo { max-width: none; }
 
 /* Início */
 .secao { border-top: 2px solid var(--azul); margin-top: 2rem; }
@@ -468,3 +470,81 @@ main [role="note"] table th { overflow-wrap: normal; word-break: normal; hyphens
 .atalho-inicio:hover { background: var(--azul); color: #fff; }
 .migalhas [aria-current="page"] { font-weight: 600; }
 @media print { .atalhos-inicio { display: none !important; } }
+
+/* Tabela de comparação (prática da Unidade 2). */
+.comparacao table { border-collapse: collapse; width: 100%; font-size: .9375rem; }
+.comparacao caption { text-align: left; font-weight: 700; color: var(--azul); padding: .4rem 0; }
+.comparacao th, .comparacao td { border: 1px solid var(--borda); padding: .4rem .55rem; vertical-align: middle; text-align: left; }
+.comparacao thead th { background: var(--azul-claro); border-bottom: 2px solid var(--azul); }
+.comparacao tbody th { color: var(--azul); background: #f6f8fa; }
+.comparacao .marca-celula { text-align: center; }
+.comparacao input[type=checkbox] { width: 1.3rem; height: 1.3rem; accent-color: var(--azul); cursor: pointer; }
+.comparacao .obs { width: 100%; min-width: 10rem; font: inherit; padding: .3rem .45rem; border: 1px solid #6e7781; border-radius: .3rem; }
+.comparacao .situacao { font-weight: 600; white-space: nowrap; }
+.comparacao .situacao.falta { color: #8a3b00; background: #fff4cc; }
+.comparacao .situacao.ok { color: var(--ok); }
+.acoes-comparacao { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.acoes-comparacao button {
+  font: inherit; font-weight: 600; padding: .5rem 1rem; border-radius: .4rem; cursor: pointer;
+  background: var(--azul); color: #fff; border: 1px solid var(--azul);
+}
+.acoes-comparacao button.botao-secundario { background: #fff; color: var(--azul); }
+.acoes-comparacao button:hover { filter: brightness(.92); }
+@media print { .acoes-comparacao, .aviso-comparacao { display: none !important; } .comparacao .obs { border: 0; border-bottom: 1px solid #999; } }
+.comparacao th, .comparacao td { overflow-wrap: normal; word-break: normal; hyphens: none; }
+.comparacao td.idioma { white-space: nowrap; }
+
+
+/* Menu do curso (☰) e sumário lateral dos livros. */
+.topo-linha { display: flex; align-items: center; gap: .75rem; }
+.botao-menu {
+  font: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  color: var(--azul); background: #fff; border: 0; border-radius: .35rem; padding: .3rem .7rem;
+}
+.botao-menu:hover { background: var(--azul-claro); }
+.menu-curso, .sumario-lateral {
+  position: fixed; top: 0; bottom: 0; left: 0; z-index: 40; width: min(22rem, 88vw);
+  background: #fff; border-right: 1px solid var(--borda); box-shadow: 4px 0 18px rgba(0, 0, 0, .18);
+  overflow-y: auto; padding: 0 1rem 1.5rem;
+}
+.gaveta-topo {
+  position: sticky; top: 0; background: #fff; display: flex; align-items: center; justify-content: space-between;
+  gap: .5rem; padding: .9rem 0 .6rem; border-bottom: 2px solid var(--azul); margin-bottom: .6rem; z-index: 1;
+}
+.gaveta-titulo { margin: 0; font-weight: 700; color: var(--azul); line-height: 1.3 !important; }
+.gaveta-fechar {
+  font: inherit; font-size: .875rem; cursor: pointer; color: var(--azul); background: var(--azul-claro);
+  border: 1px solid #9db8d3; border-radius: .35rem; padding: .25rem .6rem; flex-shrink: 0;
+}
+.menu-lista, .menu-lista ul, .lateral-lista { list-style: none; padding: 0; margin: 0; }
+.menu-lista > li { margin: 0 0 .6rem !important; }
+.menu-lista ul { margin: .25rem 0 0 .75rem; border-left: 2px solid var(--azul-claro); padding-left: .6rem; }
+.menu-lista ul li { margin: 0 0 .2rem !important; }
+.menu-lista a, .lateral-lista a { display: block; padding: .3rem .4rem; border-radius: .3rem; text-decoration: none; }
+.menu-lista a:hover, .lateral-lista a:hover { background: var(--azul-claro); }
+.menu-secao { font-weight: 700; }
+.menu-lista a[aria-current="page"], .lateral-lista a[aria-current="page"] {
+  background: var(--azul); color: #fff; font-weight: 600;
+}
+.lateral-lista { counter-reset: cap; }
+.lateral-lista li { margin: 0 0 .2rem !important; counter-increment: cap; }
+.lateral-lista a::before { content: counter(cap) ". "; font-weight: 600; }
+.lateral-voltar { margin: .9rem 0 0; font-size: .9375rem; }
+.abre-sumario { margin: 0 0 .75rem; }
+.botao-sumario {
+  font: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; color: var(--azul);
+  background: var(--azul-claro); border: 1px solid #9db8d3; border-radius: .35rem; padding: .35rem .8rem;
+}
+.botao-sumario:hover { background: var(--azul); color: #fff; }
+.fundo-gaveta { position: fixed; inset: 0; z-index: 35; background: rgba(0, 0, 0, .35); }
+/* Em telas largas, o sumário do livro fica fixo ao lado do texto. */
+@media (min-width: 75rem) {
+  .sumario-lateral.fixo { top: 0; box-shadow: none; width: 19rem; z-index: 20; }
+  body.lateral-aberta main.com-lateral { margin-left: max(20rem, calc((100vw - 96ch) / 2)); }
+  body.lateral-aberta .topo, body.lateral-aberta .rodape { margin-left: 19rem; }
+  body.lateral-aberta main.com-lateral { margin-left: max(21rem, calc(19rem + (100vw - 19rem - 96ch) / 2)); }
+}
+@media print { .botao-menu, .menu-curso, .sumario-lateral, .abre-sumario, .fundo-gaveta { display: none !important; } }
+/* Tabelas: palavras inteiras; só endereços longos podem quebrar. */
+main td, main th { overflow-wrap: normal; word-break: normal; }
+main td a[href^="http"] { overflow-wrap: anywhere; }
