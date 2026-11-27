@@ -71,7 +71,8 @@ h3 { color: var(--azul); line-height: 1.3; }
   background: var(--azul);
   color: #fff;
   font-size: .9375rem;
-  padding: 1.25rem clamp(1rem, 4vw, 2rem) 1.5rem;
+  /* Folga embaixo para o botão fixo Voltar ao início não cobrir a última linha. */
+  padding: 1.25rem clamp(1rem, 4vw, 2rem) 5.5rem;
   margin-top: 2rem;
 }
 .rodape a { color: #fff; }
@@ -419,6 +420,74 @@ a.selo-onde:hover { background: var(--azul-claro); }
   color: #fff; background: var(--azul); border: 2px solid #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
 }
 .voltar-topo:hover { background: #073a66; }
+/* Botão que abre um guia rápido no painel lateral. */
+.abre-guia { font: inherit; font-weight: 600; padding: .5rem .9rem; border-radius: .35rem; cursor: pointer; color: #fff; background: var(--azul); border: 2px solid var(--azul); }
+.abre-guia:hover { background: #073a66; }
+.abre-guia:focus-visible { outline: 3px solid var(--laranja); outline-offset: 2px; }
+/* Convite para abrir o guia rápido, no alto dos capítulos. */
+.cartao-guia { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin: 1rem 0 1.5rem; padding: .85rem 1rem; background: var(--azul-claro); border-left: 4px solid var(--azul); border-radius: .4rem; }
+.cartao-guia p { margin: 0; flex: 1 1 16rem; }
+.cartao-guia .abre-guia { flex: 0 0 auto; }
+/* Ícones do OJS 3.5 desenhados com as cores das capturas do PKP. */
+.ic { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 2rem; height: 2rem; border-radius: 50%; font-size: .75rem; font-weight: 600; line-height: 1; color: #1f2328; vertical-align: middle; }
+.ic-arco-laranja { background: radial-gradient(#fff 56%, transparent 58%), conic-gradient(#e08914 0 30%, #cdcdcd 30% 100%); }
+.ic-arco-azul { background: radial-gradient(#fff 56%, transparent 58%), conic-gradient(#006798 0 70%, #cdcdcd 70% 100%); }
+.ic-contorno-vermelho { border: 2px solid #d00a0a; background: #fff; }
+.ic-cheio-vermelho { background: #d00a0a; color: #fff; }
+.ic-cheio-verde { background: #00b24e; color: #fff; font-size: 1rem; }
+.ic-rosa { background: #f66aaf; color: #fff; font-size: 1rem; }
+.ic.ponto { width: .8rem; height: .8rem; }
+.ponto-submissao { background: #9b6ff8; }
+.ponto-avaliacao { background: #e08914; }
+.ponto-edicao { background: #f66aaf; }
+.ponto-editoracao { background: #4ac7e2; }
+/* Quadro das etapas do fluxo, com as cores das etapas no OJS 3.5. */
+.etapas { margin: 1.75rem 0; padding: 1.25rem; background: #f3f5f8; border-radius: .75rem; }
+.etapas-titulo { margin: 0 0 1rem; font-size: 1.15rem; }
+.etapas-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+@media (max-width: 40rem) { .etapas-grade { grid-template-columns: minmax(0, 1fr); } }
+.etapa { --cor: #0b4f8a; background: #fff; border: 1px solid var(--borda); border-radius: .75rem; padding: 1rem 1.1rem; }
+.etapa-submissao { --cor: #9b6ff8; } .etapa-avaliacao { --cor: #e08914; } .etapa-edicao { --cor: #f66aaf; } .etapa-editoracao { --cor: #4ac7e2; }
+.etapa-topo { display: flex; align-items: center; gap: .65rem; }
+.etapa-icone { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 2px solid var(--cor); color: #1f2328; }
+.etapa-num { margin: 0 !important; font-size: .85rem; color: var(--suave); }
+.etapa-ponto { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: var(--cor); margin-right: .4rem; }
+.etapa-nome { margin: 0; font-size: 1.05rem; color: #1f2328; }
+.etapa-objetivo { margin: .5rem 0 .4rem !important; color: var(--suave); font-size: .95rem; }
+.etapa ul { margin: 0; padding-left: 1.1rem; font-size: .95rem; }
+.etapa li { margin: 0 0 .2rem !important; }
+.etapas-nota { margin: 1rem 0 0 !important; font-size: .9rem; color: var(--suave); }
+.cartao-rotulo { margin: .55rem 0 .2rem !important; font-size: .95rem; }
+/* Listas que se sobrepõem, desenhadas como caixas uma dentro da outra. */
+.aninhado { margin: 1.5rem 0; padding: 1.25rem; background: #f3f5f8; border-radius: .75rem; }
+.aninhado-titulo { margin: 0 0 .75rem !important; font-weight: 700; color: var(--azul); }
+.caixa { border: 2px solid var(--azul); border-radius: .6rem; padding: .6rem .8rem; background: #fff; }
+.caixa p { margin: 0 0 .5rem !important; }
+.caixa-2 { border-color: #e08914; background: #fff8ef; }
+.caixa-3 { border-color: #9b6ff8; background: #f6f2ff; }
+.caixa-3 p { margin: 0 !important; }
+.contador { display: inline-flex; align-items: center; justify-content: center; min-width: 1.9rem; height: 1.9rem; padding: 0 .4rem; border: 1px solid var(--azul); border-radius: 999px; font-weight: 700; color: var(--azul); background: #fff; }
+.aninhado-leitura { margin: .9rem 0 0; }
+/* Linha de submissão desenhada, com marcas numeradas nas colunas. */
+.linha-mock { overflow-x: auto; background: #fff; border: 1px solid var(--borda); border-radius: .5rem; font-size: .85rem; margin-bottom: .9rem; }
+.lm-cab, .lm-linha { display: grid; grid-template-columns: 3.5rem minmax(9rem, 2fr) minmax(9rem, 1.6fr) 4.5rem minmax(10rem, 1.4fr) 5rem; gap: .5rem; align-items: center; min-width: 40rem; padding: .55rem .75rem; }
+.lm-cab { background: #e9edf0; text-transform: uppercase; font-size: .75rem; letter-spacing: .02em; color: #1f2328; }
+.lm-cab span { display: inline-flex; align-items: center; gap: .3rem; }
+.lm-linha i { font-style: normal; }
+.lm-linha .ic { width: 1.6rem; height: 1.6rem; font-size: .65rem; }
+.lm-linha .ic-cheio-verde { font-size: .85rem; }
+.lm-ver { color: #006798; font-weight: 700; }
+.marca { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--azul); color: #fff; font-size: .7rem; font-weight: 700; letter-spacing: 0; }
+.anatomia { margin: 0; padding-left: 1.6rem; }
+.anatomia li { margin: 0 0 .35rem !important; }
+.anatomia li::marker { font-weight: 700; color: var(--azul); }
+.ponto-incompleta { background: #8c959f; } .ponto-submissao-cor { background: #9b6ff8; } .ponto-avaliacao-cor { background: #e08914; } .ponto-edicao-cor { background: #f66aaf; } .ponto-editoracao-cor { background: #4ac7e2; }
+.situacoes { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.situacoes li { display: grid; grid-template-columns: minmax(9rem, 11rem) 1fr; gap: .75rem; align-items: baseline; margin: 0 !important; padding: .55rem .8rem; background: #fff; border: 1px solid var(--borda); border-radius: .5rem; }
+.sit-nome { white-space: nowrap; }
+@media (max-width: 34rem) { .situacoes li { grid-template-columns: 1fr; gap: .2rem; } }
+@media print { .marca, .lm-cab, .situacoes .etapa-ponto, .linha-mock .ic { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .linha-mock { overflow: visible; } }
+@media print { .cartao-guia { display: none !important; } .ic, .etapa-ponto, .etapa-icone, .caixa, .contador { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .etapa, .caixa, .aninhado, .etapas { break-inside: avoid; } }
 body.painel-aberto .voltar-topo { display: none; }
 @media print { .voltar-topo { display: none !important; } }
 .como-usar ol.sem-numero { list-style: none; padding-left: 0; }
@@ -523,6 +592,9 @@ main [role="note"] table th { overflow-wrap: normal; word-break: normal; hyphens
 .menu-lista a, .lateral-lista a { display: block; padding: .3rem .4rem; border-radius: .3rem; text-decoration: none; }
 .menu-lista a:hover, .lateral-lista a:hover { background: var(--azul-claro); }
 .menu-secao { font-weight: 700; }
+.menu-grupo > summary { cursor: pointer; padding: .3rem .4rem; border-radius: .3rem; color: var(--azul); }
+.menu-grupo > summary:hover { background: var(--azul-claro); }
+.menu-grupo > summary:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
 .menu-lista a[aria-current="page"], .lateral-lista a[aria-current="page"] {
   background: var(--azul); color: #fff; font-weight: 600;
 }
@@ -548,3 +620,13 @@ main [role="note"] table th { overflow-wrap: normal; word-break: normal; hyphens
 /* Tabelas: palavras inteiras; só endereços longos podem quebrar. */
 main td, main th { overflow-wrap: normal; word-break: normal; }
 main td a[href^="http"] { overflow-wrap: anywhere; }
+
+.pontos-etapa { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+.pontos-etapa > span { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; }
+
+/* Cartões de papéis (U1, capítulo 6). */
+.grupo-papel { margin: 1rem 0 .4rem !important; font-size: .85rem; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+.etapas .grupo-papel:first-of-type { margin-top: 0 !important; }
+.papel-linha { margin: .35rem 0 0 !important; font-size: .95rem; }
+.papel-rotulo { display: inline-block; min-width: 3.4rem; margin-right: .35rem; padding: 0 .4rem; border-radius: .3rem; font-size: .75rem; font-weight: 700; text-align: center; background: var(--azul-claro); color: var(--azul); }
+.papel-limite { background: #fff4e5; color: #8a4b00; }

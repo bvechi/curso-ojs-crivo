@@ -94,7 +94,9 @@
     if (!d) return false;
     if (!painel) criarPainel();
     painel.querySelector("#painel-titulo").textContent = d.t;
-    painel.querySelector(".painel-corpo").innerHTML = d.h;
+    painel.querySelector(".painel-rotulo").textContent = d.r || "Glossário";
+    painel.querySelector(".painel-fechar").setAttribute("aria-label", d.r ? "Fechar o guia" : "Fechar o glossário");
+    painel.querySelector(".painel-corpo").innerHTML = d.h.split("{RAIZ}").join(raiz);
     var mais = painel.querySelector(".painel-mais");
     mais.hidden = !d.g;
     if (d.g) mais.querySelector("a").href = raiz + "glossario.html#" + d.g;
