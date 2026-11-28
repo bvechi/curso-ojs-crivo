@@ -167,7 +167,7 @@
 
   // Gavetas: menu do curso (☰) e sumário lateral dos livros.
   var fundo = null, gavetaAberta = null, gatilhoGaveta = null;
-  var largo = window.matchMedia("(min-width: 75rem)");
+  var largo = window.matchMedia("(min-width: 62rem)");
   var CHAVE_LATERAL = "curso-ojs-crivo:sumario-lateral";
   function abrirGaveta(el, botao, comFundo) {
     el.hidden = false;
@@ -188,8 +188,9 @@
     document.querySelectorAll('[aria-controls="' + el.id + '"]').forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
     if (fundo) { fundo.remove(); fundo = null; }
     if (el.id === "sumario-lateral") {
+      // Em tela larga o sumário do livro não fecha: fica sempre ao lado do texto.
+      if (largo.matches) { el.hidden = false; return; }
       document.body.classList.remove("lateral-aberta");
-      if (largo.matches) { try { localStorage.setItem(CHAVE_LATERAL, "fechado"); } catch (e) { /* sem armazenamento */ } }
     }
     if (gavetaAberta === el && gatilhoGaveta) gatilhoGaveta.focus();
     gavetaAberta = null;
@@ -218,9 +219,9 @@
   var botaoSumario = document.querySelector(".botao-sumario");
   if (lateral && botaoSumario) {
     var ajustarLateral = function () {
-      var guardado = "";
-      try { guardado = localStorage.getItem(CHAVE_LATERAL) || ""; } catch (e) { guardado = ""; }
-      if (largo.matches && guardado !== "fechado") {
+      // Escolha antiga de fechar o sumário, de versões anteriores: deixa de valer.
+      try { localStorage.removeItem(CHAVE_LATERAL); } catch (e) { /* sem armazenamento */ }
+      if (largo.matches) {
         lateral.classList.add("fixo");
         lateral.hidden = false;
         document.body.classList.add("lateral-aberta");
@@ -237,7 +238,6 @@
     botaoSumario.addEventListener("click", function () {
       if (!lateral.hidden) { fecharGaveta(lateral); return; }
       if (largo.matches) {
-        try { localStorage.setItem(CHAVE_LATERAL, "aberto"); } catch (e) { /* sem armazenamento */ }
         ajustarLateral();
       } else {
         abrirGaveta(lateral, botaoSumario, true);
@@ -365,6 +365,227 @@
       aviso.textContent = "Marcações apagadas.";
     });
   });
+
+  // Registro da auditoria (U3): Conferido, Ajustado ou Pendente por item e idioma.
+  // Todos os quadros com o mesmo data-registro dividem o mesmo armazenamento:
+  // o painel lateral, presente em todas as páginas do livro, e o resumo da última página.
+  var blocosRegistro = Array.prototype.slice.call(document.querySelectorAll(".registro"));
+  function chaveRegistro(bloco) { return "curso-ojs-crivo:registro:" + bloco.dataset.registro; }
+  function lerRegistro(bloco) {
+    try { return JSON.parse(localStorage.getItem(chaveRegistro(bloco))) || {}; } catch (e) { return {}; }
+  }
+  function gravarRegistro(bloco, item, campo, valor) {
+    var dados = lerRegistro(bloco);
+    dados[item] = dados[item] || {};
+    dados[item][campo] = valor;
+    try { localStorage.setItem(chaveRegistro(bloco), JSON.stringify(dados)); } catch (e) { /* sem armazenamento */ }
+  }
+  function itensDoBloco(bloco) { return Array.prototype.slice.call(bloco.querySelectorAll("[data-item]")); }
+  function preencherRegistro(bloco) {
+    var dados = lerRegistro(bloco);
+    itensDoBloco(bloco).forEach(function (el) {
+      var d = dados[el.dataset.item] || {};
+      el.querySelectorAll("select").forEach(function (s) { s.value = d[s.dataset.idioma] || ""; });
+      var obs = el.querySelector(".obs");
+      if (obs && document.activeElement !== obs) obs.value = d.obs || "";
+    });
+  }
+  function atualizarRegistros() { blocosRegistro.forEach(preencherRegistro); }
+
+  blocosRegistro.forEach(function (bloco) {
+    var aviso = bloco.querySelector(".aviso-registro");
+    preencherRegistro(bloco);
+    itensDoBloco(bloco).forEach(function (el) {
+      el.querySelectorAll("select").forEach(function (s) {
+        s.addEventListener("change", function () {
+          gravarRegistro(bloco, el.dataset.item, s.dataset.idioma, s.value);
+          atualizarRegistros();
+          if (aviso) aviso.textContent = "Registro guardado neste navegador.";
+        });
+      });
+      var obs = el.querySelector(".obs");
+      if (obs) obs.addEventListener("input", function () {
+        gravarRegistro(bloco, el.dataset.item, "obs", obs.value);
+        atualizarRegistros();
+      });
+    });
+    var baixar = bloco.querySelector("[data-acao=baixar]");
+    if (baixar) baixar.addEventListener("click", function () {
+      baixarRegistroDocx(bloco.dataset.titulo, bloco.dataset.idiomas.split("|"), itensDoBloco(bloco));
+      if (aviso) aviso.textContent = "Registro baixado em Word.";
+    });
+    var pdf = bloco.querySelector("[data-acao=pdf]");
+    if (pdf) pdf.addEventListener("click", function () { imprimirRegistro(bloco); });
+    var limpar = bloco.querySelector("[data-acao=limpar]");
+    if (limpar) limpar.addEventListener("click", function () {
+      if (!window.confirm("Apagar todo o registro da auditoria deste livro?")) return;
+      try { localStorage.removeItem(chaveRegistro(bloco)); } catch (e) { /* sem armazenamento */ }
+      atualizarRegistros();
+      if (aviso) aviso.textContent = "Registro apagado.";
+    });
+  });
+  // Ao voltar para a página pelo histórico, mostra o que foi marcado em outras páginas.
+  window.addEventListener("pageshow", atualizarRegistros);
+
+  // Painel do registro: faixa na metade de baixo da tela. Fica aberto ou fechado entre as páginas do livro.
+  var painelRegistro = document.getElementById("painel-registro");
+  var CHAVE_PAINEL_REGISTRO = "curso-ojs-crivo:painel-registro";
+  function botoesRegistro() { return document.querySelectorAll(".botao-registro"); }
+  function abrirRegistro(focar) {
+    if (!painelRegistro) return;
+    painelRegistro.hidden = false;
+    document.body.classList.add("registro-aberto");
+    botoesRegistro().forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
+    try { localStorage.setItem(CHAVE_PAINEL_REGISTRO, "aberto"); } catch (e) { /* sem armazenamento */ }
+    if (focar) painelRegistro.querySelector("#registro-titulo").focus();
+  }
+  function fecharRegistro(devolverFoco) {
+    if (!painelRegistro) return;
+    painelRegistro.hidden = true;
+    document.body.classList.remove("registro-aberto");
+    botoesRegistro().forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+    try { localStorage.setItem(CHAVE_PAINEL_REGISTRO, "fechado"); } catch (e) { /* sem armazenamento */ }
+    var b = botoesRegistro()[0];
+    if (devolverFoco && b) b.focus();
+  }
+  if (painelRegistro) {
+    // Itens da página atual ficam em destaque no painel.
+    var atuais = [];
+    document.querySelectorAll(".registro-nota[data-registro-itens]").forEach(function (n) {
+      atuais = atuais.concat(n.dataset.registroItens.split("|"));
+    });
+    var primeiroAtual = null;
+    painelRegistro.querySelectorAll("[data-item]").forEach(function (el) {
+      if (atuais.indexOf(el.dataset.item) !== -1) {
+        el.classList.add("registro-atual");
+        if (!primeiroAtual) primeiroAtual = el;
+      }
+    });
+    function mostrarAtual() {
+      if (primeiroAtual) painelRegistro.querySelector(".registro-painel").scrollLeft = primeiroAtual.offsetLeft - 16;
+    }
+    // O botão do alto da página abre e fecha. O botão "Abrir o registro" das notas só abre.
+    botoesRegistro().forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (painelRegistro.hidden) { abrirRegistro(true); mostrarAtual(); } else { fecharRegistro(false); }
+      });
+    });
+    document.querySelectorAll(".abre-registro:not(.botao-registro)").forEach(function (b) {
+      b.addEventListener("click", function () { abrirRegistro(true); mostrarAtual(); });
+    });
+    painelRegistro.querySelector(".registro-fechar").addEventListener("click", function () { fecharRegistro(true); });
+    painelRegistro.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.stopPropagation(); fecharRegistro(true); }
+    });
+    // Na primeira visita, fica fechado. Depois, vale o que a pessoa escolheu.
+    var salvo = "";
+    try { salvo = localStorage.getItem(CHAVE_PAINEL_REGISTRO) || ""; } catch (e) { salvo = ""; }
+    if (salvo === "aberto") { abrirRegistro(false); mostrarAtual(); }
+  }
+
+  // PDF do registro: abre a impressão só com o registro, ao lado do que a pessoa marcou na Unidade 2.
+  function situacaoU02(dados, indice) {
+    var s = dados[indice];
+    if (!s || !s.t) return "Não marcado";
+    var real = s.m[0], treino = s.m[1];
+    if (real && treino) return "Completo";
+    if (real && !treino) return "Falta no treinamento";
+    if (!real && treino) return "Só no treinamento";
+    return "Não encontrado";
+  }
+  function imprimirRegistro(bloco) {
+    function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    var dadosU = document.getElementById("dados-u02");
+    var u02Itens = dadosU ? dadosU.dataset.itens.split("|") : [];
+    var u02Idiomas = dadosU ? dadosU.dataset.idiomas.split("|") : [];
+    var u02 = {};
+    try { u02 = JSON.parse(localStorage.getItem("curso-ojs-crivo:comparacao:" + (dadosU ? dadosU.dataset.chave : ""))) || {}; } catch (e) { u02 = {}; }
+    var temU02 = Object.keys(u02).length > 0;
+    var dados = lerRegistro(bloco);
+    var idiomas = bloco.dataset.idiomas.split("|");
+    var linhas = "";
+    itensDoBloco(bloco).forEach(function (el) {
+      var item = el.dataset.item, d = dados[item] || {};
+      idiomas.forEach(function (idioma, j) {
+        var pos = u02Itens.indexOf(item), pi = u02Idiomas.indexOf(idioma);
+        var antes = pos === -1 || pi === -1 ? "—" : situacaoU02(u02, pos * u02Idiomas.length + pi);
+        linhas += "<tr>" + (j === 0 ? '<th scope="rowgroup" rowspan="' + idiomas.length + '">' + esc(item) + "</th>" : "") +
+          "<td>" + esc(idioma) + "</td><td>" + esc(antes) + "</td><td>" + esc(d[idioma] || "—") + "</td>" +
+          (j === 0 ? '<td rowspan="' + idiomas.length + '">' + esc(d.obs || "") + "</td>" : "") + "</tr>";
+      });
+    });
+    var velho = document.getElementById("impressao-registro");
+    if (velho) velho.remove();
+    var sec = document.createElement("section");
+    sec.id = "impressao-registro";
+    sec.innerHTML = "<h1>Registro da auditoria: Unidade 3</h1>" +
+      "<p>Curso OJS 3.5 para a equipe da Revista Crivo · registro de " + esc(new Date().toLocaleDateString("pt-BR")) + "</p>" +
+      "<p><strong>Na Unidade 2:</strong> o que você marcou ao comparar a Crivo com o ambiente de treinamento. " +
+      "<strong>Agora:</strong> Conferido (já estava certo), Ajustado (alterado e verificado no site) ou Pendente.</p>" +
+      (temU02 ? "" : "<p><strong>Atenção:</strong> não há marcas da Unidade 2 neste navegador. A coluna da Unidade 2 ficou sem dados.</p>") +
+      '<table><thead><tr><th scope="col">Item</th><th scope="col">Idioma</th><th scope="col">Na Unidade 2</th>' +
+      '<th scope="col">Agora</th><th scope="col">Observações</th></tr></thead><tbody>' + linhas + "</tbody></table>";
+    document.body.appendChild(sec);
+    document.body.classList.add("imprimindo-registro");
+    function limparImpressao() {
+      document.body.classList.remove("imprimindo-registro");
+      window.removeEventListener("afterprint", limparImpressao);
+    }
+    window.addEventListener("afterprint", limparImpressao);
+    window.print();
+  }
+
+  function baixarRegistroDocx(titulo, idiomas, linhas) {
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function celula(texto, negrito, fundo) {
+      var tcpr = fundo ? '<w:shd w:val="clear" w:color="auto" w:fill="' + fundo + '"/>' : "";
+      return "<w:tc><w:tcPr>" + tcpr + "</w:tcPr><w:p>" + (texto ?
+        "<w:r><w:rPr>" + (negrito ? "<w:b/>" : "") + '<w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">' +
+        esc(texto) + "</w:t></w:r>" : "") + "</w:p></w:tc>";
+    }
+    var cab = ["Item da auditoria"].concat(idiomas, ["Observações"]);
+    var xml = '<w:tr><w:trPr><w:tblHeader/></w:trPr>' +
+      cab.map(function (c) { return celula(c, true, "D9E2F3"); }).join("") + "</w:tr>";
+    linhas.forEach(function (tr) {
+      var cels = celula(tr.dataset.item, true);
+      tr.querySelectorAll("select").forEach(function (s) { cels += celula(s.value || "—"); });
+      cels += celula(tr.querySelector(".obs").value);
+      xml += "<w:tr>" + cels + "</w:tr>";
+    });
+    var bordas = ["top", "left", "bottom", "right", "insideH", "insideV"].map(function (b) {
+      return "<w:" + b + ' w:val="single" w:sz="4" w:space="0" w:color="808080"/>';
+    }).join("");
+    var hoje = new Date().toLocaleDateString("pt-BR");
+    function par(texto, extra) {
+      return '<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr>' + (extra || "") +
+        '</w:rPr><w:t xml:space="preserve">' + esc(texto) + "</w:t></w:r></w:p>";
+    }
+    var corpo = par(titulo, '<w:b/><w:sz w:val="32"/>') +
+      par("Curso OJS 3.5 para a equipe da Revista Crivo · Unidade 3 · Registro baixado em " + hoje) +
+      par("Conferido: já estava certo. Ajustado: alterado e verificado no site. Pendente: depende de conteúdo, acesso ou decisão da equipe.") +
+      '<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>' + bordas + "</w:tblBorders></w:tblPr>" + xml + "</w:tbl>" +
+      '<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>' +
+      '<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>';
+    var documento = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + corpo + "</w:body></w:document>";
+    var tipos = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+    var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+    var blob = zipar([["[Content_Types].xml", tipos], ["_rels/.rels", rels], ["word/document.xml", documento]]);
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "registro-auditoria-crivo-u3.docx";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
 
   function baixarDocx(titulo, colunas, linhas, comRespostas) {
     function esc(s) {
