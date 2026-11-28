@@ -4,6 +4,7 @@
   "use strict";
   var CHAVE = "curso-ojs-crivo:concluidas";
   var VISTAS = "curso-ojs-crivo:vistas";
+  var PAGINAS_LIVRO = "curso-ojs-crivo:paginas-livro";
 
   function ler(chave) {
     try { return JSON.parse(localStorage.getItem(chave)) || {}; } catch (e) { return {}; }
@@ -18,6 +19,12 @@
   }
 
   var atividade = document.body.getAttribute("data-atividade");
+  var paginaLivro = document.body.dataset.paginaLivro;
+  if (paginaLivro) {
+    var paginasLidas = ler(PAGINAS_LIVRO);
+    paginasLidas[paginaLivro] = Date.now();
+    gravar(PAGINAS_LIVRO, paginasLidas);
+  }
   if (atividade) {
     var v = ler(VISTAS); v[atividade] = true; gravar(VISTAS, v);
   }
@@ -33,17 +40,62 @@
       b.textContent = feita ? "Concluída ✓ (clique para desmarcar)" : "Marcar como concluída";
       b.setAttribute("aria-pressed", feita ? "true" : "false");
     });
-    var total = 0, feitas = 0;
+    var paginasLidas = ler(PAGINAS_LIVRO);
+    var total = 0, feitas = 0, minutos = 0, minutosFeitos = 0;
+    var proxima = null, retomarLivro = null, acessoMaisRecente = 0;
     document.querySelectorAll("[data-marca]").forEach(function (m) {
       total++;
       var f = !!c[m.dataset.marca];
-      if (f) feitas++;
+      var duracao = Number(m.dataset.minutos);
+      minutos += duracao;
+      if (f) {
+        feitas++;
+        minutosFeitos += duracao;
+      } else {
+        if (!proxima) proxima = m.closest("li").querySelector("a").href;
+        var paginas = m.dataset.paginasLivro;
+        if (paginas) {
+          paginas = paginas.split(" ");
+          var lidas = paginas.filter(function (pagina) { return paginasLidas[pagina]; });
+          minutosFeitos += Math.min(duracao - 1, Math.floor(duracao * lidas.length / paginas.length));
+          lidas.forEach(function (pagina) {
+            if (paginasLidas[pagina] > acessoMaisRecente) {
+              acessoMaisRecente = paginasLidas[pagina];
+              retomarLivro = pagina;
+            }
+          });
+        }
+      }
       m.classList.toggle("feita", f);
       m.setAttribute("aria-pressed", f ? "true" : "false");
     });
     var p = document.querySelector(".progresso");
-    if (p && total) p.textContent = "Você concluiu " + feitas + " de " + total + " atividades neste navegador.";
+    if (!p || !total) return;
+
+    function formatarTempo(valor) {
+      var horas = Math.floor(valor / 60), resto = valor % 60;
+      if (!horas) return resto + " min";
+      return horas + " h" + (resto ? " " + resto + " min" : "");
+    }
+
+    var percentual = minutosFeitos / minutos * 100;
+    p.querySelector(".progresso-tempo").textContent =
+      formatarTempo(minutosFeitos) + " de " + formatarTempo(minutos) + " de percurso estimado";
+    p.querySelector(".progresso-percentual").textContent = Math.floor(percentual) + "%";
+    p.querySelector(".progresso-atividades").textContent = feitas + " de " + total + " atividades concluídas";
+    p.querySelectorAll(".progresso-barra span").forEach(function (segmento, i) {
+      segmento.classList.toggle("aceso", (i + 1) * 5 <= percentual);
+    });
+    var continuar = p.querySelector(".progresso-continuar");
+    continuar.hidden = !proxima;
+    if (proxima) {
+      continuar.href = retomarLivro || proxima;
+      continuar.textContent = feitas || retomarLivro ? "Continuar de onde parei →" : "Começar o curso →";
+    }
+    p.hidden = false;
   }
+
+  window.addEventListener("pageshow", atualizarBotoes);
 
   document.querySelectorAll("button.marcar").forEach(function (b) {
     b.addEventListener("click", function () {

@@ -102,7 +102,60 @@ button.marca.feita::after { content: "✓"; font-size: 1rem; font-weight: 700; }
 .sr {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
-.progresso { font-weight: 600; }
+.progresso {
+  width: 100%;
+  max-width: 19rem;
+  margin: .75rem 0 0;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--borda);
+  border-top: 3px solid #4ac7e2;
+  border-radius: .65rem;
+  background: #fff;
+  color: var(--texto);
+  font-size: .875rem;
+}
+.progresso h2 { margin: 0 0 .5rem; color: var(--azul); font-size: 1rem; }
+.progresso-tempo, .progresso-percentual {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.progresso-tempo { margin: 0 0 .4rem; }
+.progresso-medidor { display: flex; align-items: center; gap: .6rem; max-width: 36rem; }
+.progresso-barra { flex: 1; display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; }
+.progresso-barra span { height: .45rem; border-radius: 2px; background: var(--azul-claro); transition: background-color .25s; }
+.progresso-barra .aceso { background: #9b6ff8; }
+.progresso-atividades { margin: .35rem 0 .75rem; }
+.progresso-continuar:not([hidden]) {
+  display: inline-block;
+  padding: .35rem .65rem;
+  border: 1px solid var(--azul);
+  border-radius: .45rem;
+  background: var(--azul-claro);
+  color: var(--azul);
+  font-weight: 600;
+}
+.progresso-local { margin: .45rem 0 0; font-size: .75rem; color: var(--suave); }
+@media screen and (min-width: 70rem) {
+  main:has(> .inicio-layout) { max-width: calc(96ch + 18rem + 3.5rem); }
+  .inicio-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    grid-template-areas: "intro progresso" "unidades progresso";
+    column-gap: 3.5rem;
+  }
+  .inicio-layout > .lead { grid-area: intro; margin-top: 0; }
+  .inicio-layout > .progresso {
+    grid-area: progresso;
+    align-self: start;
+    position: sticky;
+    top: 1rem;
+    margin-top: 0;
+  }
+  .inicio-unidades { grid-area: unidades; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progresso-barra span { transition: none; }
+}
 
 /* Botões */
 .botao, button {
